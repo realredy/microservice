@@ -2,7 +2,10 @@ const express = require('express');
 const Redis = require('redis'); // ! importamos la libreria de redis
 const app = express();
 const cors = require('cors');
+const bodyParser = require("body-parser");
 
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 const { fechdata } = require('./helper/fechdata');
 
@@ -29,7 +32,8 @@ app.get('/', async (req, res) => {
     const response = await client.get('response'); // ! puede tener datos o devolver null
 
     if (response) {
-      console.log('Cached response actived...')
+      console.log("🚀 ~ file: index.js:35 ~ app.get ~ response", response)
+      console.log('Cached response actived without id...')
       res.status(200).json(JSON.parse(response)); // ! si existen datos no continuará
     } else {
 
@@ -57,32 +61,44 @@ app.get('/', async (req, res) => {
 
 })
 
+app.post('/cart', async (req, res) => {
+  console.log("Staring frmo /cart...")
+   
+   	let response = await fechdata(null,"POST", JSON.stringify(req.body))
+    	console.log( 'getting boddy::', JSON.stringify(req.body))
+   	res.status(200).json({contents:response , status:{http_code:200}});
+  	
+});
+  
 
 app.get('/:id', async (req, res) =>{
   const id = req.params.id
- 
+   
    try {
     const response = await client.get(id);
+    // console.log("🚀 ~ file: index.js ~ line 66 ~ app.get ~ response", response)
     if (response) {
-      console.log('Cached response actived...')
-      res.status(200).json(JSON.parse(response)); // ! si existen datos no continuará
+      console.log('Cached response actived from single...'); 
+      res.status(200).json( {contents:JSON.parse(response), status:{http_code:200}}); // ! si existen datos no continuará
     }else{
       const response = await fechdata(id)
-      // console.log("🚀 ~ file: index.js ~ line 60 ~ app.get ~ response", response)
+       
       client.setEx(id, oneHoutCacheData, JSON.stringify(response));
 
-      console.log('Chargin data from default resource... ')
+      console.log('Chargin data from default resource with id:... ')
 
-      res.status(200).json(response);
-
+      res.status(200).json({contents:response, status:{http_code:200}});
+ 
     }
-   } catch (error) {
-    console.log(err);
+    } catch (error) {
+    console.log(error);
     res.status(500).json({ msg: `Internal Server Error.` });
    }
-
  
 }) 
+ 
+   
+
 app.listen(4000, () => {
   console.log('Ready and listend port 4000');
-})
+})  
